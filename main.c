@@ -17,11 +17,10 @@ const char SEGMENTE[] = {
    0b00001010,   //9
    0b11110111,   // dot
    0b11011111,   // minus
-   0xFF                 //OFF
+   0b11111111    //OFF
  };
 unsigned char digit_array[] = {0, 0, 0};
 unsigned char digit_counter = 0;
-
 
 ISR(TIMER0_OVF_vect) {
     PORTB = 0xFF;
@@ -33,23 +32,19 @@ ISR(TIMER0_OVF_vect) {
     TCNT0 = 0;
 }
 
-void init_timer (void)
-{
+void init_timer(void) {
     TIMSK=(1<<TOIE0);                    //Enable timer overflow interrupt
     TCCR0=(0<<CS00)|(1<<CS01)|(0<<CS02); //Prescaller = /1
 }
 
-unsigned int getADC(void) //Считывание АЦП
-{
+unsigned int get_adc(void) {
     unsigned int v;
-    ADCSRA|=(1<<ADSC);	//Начать преобразование
+    ADCSRA|=(1<<ADSC); //process data
     while ((ADCSRA&_BV(ADIF))==0x00) {
     }
     v=(ADCL|ADCH<<8);
     return v;
 }
-
-
 
 void convert_data(unsigned int x) {
     if(x>99) {
@@ -67,25 +62,18 @@ void convert_data(unsigned int x) {
     }
 }
 
-
-int main()
- { 
+int main() {
     DDRB = 0xFF;
     DDRD = 0xFF;
-    init_timer(); 			//Init timer
-    sei();				//Interrupt enable
-    ADCSRA=(1<<ADEN)|(1<<ADPS1)|(1<<ADPS0);	
-    //Включаем АЦП, тактовая частота бреобразователя =/8 от тактовой микроконтроллера
-    ADMUX=(1<<REFS1)|(1<<REFS0)|(0<<MUX0)|(0<<MUX1)|(0<<MUX2)|(0<<MUX3);			
-    //Внутренний источник опорного напряжения Vref=2,56, входом АЦП является PC0
+    init_timer();   //Init timer
+    sei();  //Interrupt enable
+    ADCSRA=(1<<ADEN)|(1<<ADPS1)|(1<<ADPS0); // Enable ADC, freq =/8 
+    ADMUX=(1<<REFS1)|(1<<REFS0)|(0<<MUX0)|(0<<MUX1)|(0<<MUX2)|(0<<MUX3);
+    // Internal source Vref=2,56, PC0 - input of ADC
 
-    // Write your code here
     while(1) {
-        //convert_data((int)getADC()*256/1024);
-        
-        convert_data((int)((getADC()*2.56/1024)/0.0041));
-        //Conver data to codes
+        convert_data((int)((get_adc()*2.56/1024)/0.0041)); //Conver data to codes
         _delay_ms(500);
     }
     return 0;
- }
+}
